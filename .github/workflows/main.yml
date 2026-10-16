@@ -1,0 +1,97 @@
+name: Construire l'APK See Cat
+
+# Se lance à chaque envoi de fichiers sur la branche principale, ou à la main (Actions > Run workflow).
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Récupérer les fichiers du dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installer Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Installer le SDK Android
+        uses: android-actions/setup-android@v3
+
+      - name: Préparer le site et la configuration
+        run: |
+          set -e
+          # Le site est dans le dossier www. S'il n'existe pas, on prend les pages à la racine du dépôt.
+          if [ ! -d www ]; then
+            mkdir www
+            cp -r ./*.html ./*.js ./*.webmanifest icons www/ 2>/dev/null || true
+          fi
+          test -f www/index.html || { echo "ERREUR : index.html est introuvable (ni dans www/, ni à la racine)"; exit 1; }
+          # Fichiers de configuration (créés seulement s'ils manquent)
+          if [ ! -f package.json ]; then
+            cat > package.json <<'EOF'
+          {
+            "name": "see-cat-app",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": { "@capacitor/android": "^6.2.0", "@capacitor/core": "^6.2.0" },
+            "devDependencies": { "@capacitor/cli": "^6.2.0" }
+          }
+          EOF
+          fi
+          if [ ! -f capacitor.config.json ]; then
+            cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.seecat.app",
+            "appName": "See Cat",
+            "webDir": "www",
+            "backgroundColor": "#080816",
+            "server": { "androidScheme": "https" }
+          }
+          EOF
+          fi
+
+      - name: Installer Capacitor
+        run: npm install --no-audit --no-fund
+
+      - name: Créer le projet Android
+        run: |
+          [ -d android ] || npx cap add android
+
+      - name: Icône, écran de démarrage et numéro de version
+        run: |
+          if [ -d android-res ]; then cp -r android-res/. android/app/src/main/res/; fi
+          sed -i "s/versionCode [0-9]*/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"[^\"]*\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+
+      - name: Copier la dernière version du site dans l'app
+        run: npx cap sync android
+
+      - name: Compiler l'APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Préparer le fichier à télécharger
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk SeeCat.apk
+
+      - name: Mettre l'APK à disposition
+        uses: actions/upload-artifact@v4
+        with:
+          name: SeeCat-APK
+          path: SeeCat.apk
+          if-no-files-found: error
