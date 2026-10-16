@@ -1,0 +1,7 @@
+{
+  "appId": "com.seecat.app",
+  "appName": "See Cat",
+  "webDir": "www",
+  "backgroundColor": "#080816",
+  "server": { "androidScheme": "https" }
+}

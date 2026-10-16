@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<script src="see-cat-intro.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#080816">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="See Cat">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<script src="see-cat-app.js" defer></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>See Cat — Vérification du code</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --orange: #ff7e29;
+    --purple: #6a5af9;
+    --bg: #080816;
+    --card: #121220;
+    --card2: #181830;
+    --text: #f0f0f0;
+    --muted: #8888aa;
+    --border: rgba(255,255,255,0.07);
+    --red: #e74c3c;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:'Inter',sans-serif; color:var(--text); min-height:100vh;
+    background:
+      linear-gradient(to bottom, rgba(8,8,22,.6), rgba(8,8,22,.95) 70%, var(--bg) 100%),
+      radial-gradient(circle at 30% 20%, rgba(255,126,41,.18), transparent 55%),
+      radial-gradient(circle at 80% 70%, rgba(106,90,249,.18), transparent 55%),
+      var(--bg);
+    display:flex; flex-direction:column; overflow-x:hidden;
+  }
+
+  header { padding:22px 5%; }
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:32px; color:var(--orange); letter-spacing:3px; text-decoration:none; display:inline-flex; align-items:center; gap:10px; }
+
+  main { flex:1; display:flex; align-items:center; justify-content:center; padding:24px; }
+
+  .auth-card {
+    background:rgba(18,18,32,.92); border:1px solid var(--border); border-radius:14px;
+    padding:40px 36px; width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,.6);
+    backdrop-filter:blur(6px); text-align:center;
+  }
+  .verif-icon { font-size:42px; color:var(--orange); margin-bottom:16px; }
+  #form-title { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:1.5px; margin-bottom:8px; color:#fff; }
+  .verif-sub { font-size:13.5px; color:var(--muted); margin-bottom:6px; line-height:1.5; }
+  .verif-email { color:#fff; font-weight:600; }
+
+  .code-input-wrap { display:flex; gap:8px; justify-content:center; margin:26px 0 6px; }
+  .code-input-wrap input {
+    width:44px; height:54px; text-align:center; font-size:22px; font-weight:700;
+    background:var(--card2); border:2px solid var(--border); border-radius:8px; color:#fff;
+    font-family:'Inter',sans-serif; caret-color:transparent;
+  }
+  .code-input-wrap input:focus { outline:none; border-color:var(--orange); }
+  .code-input-wrap input:not(:placeholder-shown) { border-color:var(--orange); }
+
+  .verif-error { color:var(--red); font-size:13px; margin:10px 0 4px; display:none; line-height:1.5; }
+  .verif-error.show { display:block; }
+
+  #submit-btn {
+    width:100%; padding:13px; background:var(--orange); color:#fff; border:none; border-radius:8px;
+    cursor:pointer; font-weight:700; font-size:15px; transition:background .2s, opacity .2s;
+    font-family:'Inter',sans-serif; margin-top:18px;
+  }
+  #submit-btn:hover { background:#ff9a57; }
+  #submit-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+  .resend-row { margin-top:20px; font-size:13px; color:var(--muted); }
+  #resend-btn { background:none; border:none; color:var(--orange); font-size:13px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:600; padding:0; }
+  #resend-btn:hover { text-decoration:underline; }
+  #resend-btn:disabled { color:var(--muted); cursor:not-allowed; text-decoration:none; }
+
+  #back-link {
+    display:block; width:100%; text-align:center; background:none; border:none; color:var(--muted);
+    font-size:12.5px; margin-top:22px; cursor:pointer; font-family:'Inter',sans-serif; transition:color .2s;
+    text-decoration:none;
+  }
+  #back-link:hover { color:#fff; text-decoration:underline; }
+
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(60px); background:var(--card); border:1px solid var(--border); border-radius:8px; padding:12px 22px; font-size:13px; z-index:3000; transition:transform .3s; display:flex; align-items:center; gap:8px; box-shadow:0 8px 28px rgba(0,0,0,.5); white-space:nowrap; }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  .toast i { color:var(--orange); }
+
+  @media(max-width:480px) {
+    header { padding:16px 5%; }
+    .logo { font-size:24px; }
+    .auth-card { padding:30px 22px; border-radius:10px; }
+    #form-title { font-size:22px; }
+    .code-input-wrap input { width:38px; height:48px; font-size:19px; }
+  }
+  @media(max-width:360px) {
+    .code-input-wrap { gap:6px; }
+    .code-input-wrap input { width:32px; height:44px; font-size:17px; }
+    .auth-card { padding:24px 16px; }
+  }
+</style>
+</head>
+<body>
+
+  <header>
+    <a href="index.html" class="logo"><i class="fas fa-cat"></i> SEE CAT</a>
+  </header>
+
+  <main>
+    <div class="auth-card">
+      <div class="verif-icon"><i class="fas fa-envelope-open-text"></i></div>
+      <h1 id="form-title">Vérifiez votre email</h1>
+      <p class="verif-sub">Un code à 6 chiffres a été envoyé à<br><span class="verif-email" id="masked-email">...</span></p>
+
+      <div class="code-input-wrap" id="code-input-wrap">
+        <input type="password" maxlength="1" pattern="[0-9]" inputmode="numeric" class="code-digit" data-index="0" autofocus>
+        <input type="password" maxlength="1" pattern="[0-9]" inputmode="numeric" class="code-digit" data-index="1">
+        <input type="password" maxlength="1" pattern="[0-9]" inputmode="numeric" class="code-digit" data-index="2">
+        <input type="password" maxlength="1" pattern="[0-9]" inputmode="numeric" class="code-digit" data-index="3">
+        <input type="password" maxlength="1" pattern="[0-9]" inputmode="numeric" class="code-digit" data-index="4">
+        <input type="password" maxlength="1" pattern="[0-9]" inputmode="numeric" class="code-digit" data-index="5">
+      </div>
+
+      <div class="verif-error" id="verif-error"></div>
+
+      <button type="button" id="submit-btn">Valider le code</button>
+
+      <div class="resend-row">
+        Vous n'avez rien reçu ?
+        <button type="button" id="resend-btn">Renvoyer le code</button>
+      </div>
+
+      <a href="#" id="back-link"><i class="fas fa-arrow-left"></i> Utiliser un autre compte</a>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"><i class="fas fa-circle-info"></i> <span id="toast-msg"></span></div>
+
+  <!-- ===== FIREBASE ===== -->
+  <script type="importmap">
+  {
+    "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js",
+      "firebase/auth": "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js"
+    }
+  }
+  </script>
+
+  <!-- ===== EMAILJS (envoi du code de vérification, sans backend ni carte bancaire) ===== -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "firebase/app";
+    import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+    import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+
+    // ===== CONFIGURATION EMAILJS =====
+    // Mêmes identifiants que sur auth.html (créés sur https://www.emailjs.com)
+    const EMAILJS_PUBLIC_KEY  = "z3rihsaWdsTP8Bkcl";
+    const EMAILJS_SERVICE_ID  = "service_wc8pipm";
+    const EMAILJS_TEMPLATE_ID = "template_qvzyrep";
+    emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiOOJKmyXAih0E4Nx1Z4cGg2kcgRH-u0E",
+      authDomain: "see-cat-anime.firebaseapp.com",
+      projectId: "see-cat-anime",
+      storageBucket: "see-cat-anime.firebasestorage.app",
+      messagingSenderId: "787391287965",
+      appId: "1:787391287965:web:bc0d66a306a93b00823a74"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const MAX_ATTEMPTS = 5;
+    const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+    const RESEND_COOLDOWN_S = 45;
+
+    let currentUser = null;
+    let resendTimer = null;
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      const m = document.getElementById('toast-msg');
+      m.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2600);
+    }
+    function showError(msg) {
+      const el = document.getElementById('verif-error');
+      el.textContent = msg;
+      el.classList.add('show');
+    }
+    function clearError() {
+      const el = document.getElementById('verif-error');
+      el.textContent = '';
+      el.classList.remove('show');
+    }
+    function maskEmail(email) {
+      const [user, domain] = email.split('@');
+      if (!domain) return email;
+      const visible = user.slice(0, 2);
+      return `${visible}${'*'.repeat(Math.max(user.length - 2, 3))}@${domain}`;
+    }
+
+    // ===== GÉNÉRATION + ENVOI DU CODE =====
+    // Enregistre le code dans Firestore et l'envoie réellement via EmailJS
+    // (aucun backend, aucune carte bancaire requise).
+    function generateVerificationCode() {
+      return String(Math.floor(100000 + Math.random() * 900000));
+    }
+
+    async function sendVerificationCode(user) {
+      const code = generateVerificationCode();
+      const expiresAt = Date.now() + CODE_TTL_MS;
+      await setDoc(doc(db, "users", user.uid, "emailVerification", "current"), {
+        code,
+        email: user.email,
+        createdAt: Date.now(),
+        expiresAt,
+        attempts: 0
+      });
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email: user.email,
+        code: code
+      });
+    }
+
+    // ===== CHAMPS DE SAISIE DU CODE =====
+    function getCodeFromInputs() {
+      const inputs = document.querySelectorAll('.code-digit');
+      let code = '';
+      inputs.forEach(inp => code += inp.value);
+      return code;
+    }
+    function clearCodeInputs() {
+      const inputs = document.querySelectorAll('.code-digit');
+      inputs.forEach((inp, i) => { inp.value = ''; if (i === 0) inp.focus(); });
+    }
+
+    document.querySelectorAll('.code-digit').forEach((input, index, all) => {
+      input.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (val && !/^\d$/.test(val)) { e.target.value = ''; return; }
+        if (val && index < all.length - 1) all[index + 1].focus();
+        clearError();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !e.target.value && index > 0) all[index - 1].focus();
+        if (e.key === 'Enter') validateCode();
+      });
+      input.addEventListener('focus', (e) => e.target.select());
+    });
+
+    // ===== VALIDATION DU CODE =====
+    async function validateCode() {
+      if (!currentUser) return;
+      const entered = getCodeFromInputs();
+      if (entered.length !== 6) {
+        showError("Veuillez entrer les 6 chiffres du code.");
+        return;
+      }
+      const submitBtn = document.getElementById('submit-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Vérification...";
+      clearError();
+
+      try {
+        const ref = doc(db, "users", currentUser.uid, "emailVerification", "current");
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) {
+          showError("Aucun code actif. Cliquez sur \"Renvoyer le code\".");
+          return;
+        }
+        const data = snap.data();
+
+        if (Date.now() > data.expiresAt) {
+          showError("Ce code a expiré. Cliquez sur \"Renvoyer le code\".");
+          return;
+        }
+        if ((data.attempts || 0) >= MAX_ATTEMPTS) {
+          showError("Trop de tentatives. Demandez un nouveau code.");
+          return;
+        }
+
+        if (String(entered) === String(data.code)) {
+          sessionStorage.setItem('emailVerified_' + currentUser.uid, 'true');
+          await deleteDoc(ref).catch(() => {});
+          showToast("✅ Email vérifié !");
+          setTimeout(() => { window.location.href = "profils.html"; }, 500);
+        } else {
+          const attempts = (data.attempts || 0) + 1;
+          await setDoc(ref, { ...data, attempts }, { merge: true });
+          const remaining = MAX_ATTEMPTS - attempts;
+          showError(remaining > 0
+            ? `Code incorrect. ${remaining} tentative(s) restante(s).`
+            : "Code incorrect. Trop de tentatives, demandez un nouveau code.");
+          clearCodeInputs();
+        }
+      } catch (e) {
+        console.error(e);
+        showError("Erreur de vérification : " + e.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Valider le code";
+      }
+    }
+    document.getElementById('submit-btn').addEventListener('click', validateCode);
+
+    // ===== RENVOI DU CODE =====
+    function startResendCooldown() {
+      const btn = document.getElementById('resend-btn');
+      let remaining = RESEND_COOLDOWN_S;
+      btn.disabled = true;
+      btn.textContent = `Renvoyer le code (${remaining}s)`;
+      clearInterval(resendTimer);
+      resendTimer = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(resendTimer);
+          btn.disabled = false;
+          btn.textContent = "Renvoyer le code";
+        } else {
+          btn.textContent = `Renvoyer le code (${remaining}s)`;
+        }
+      }, 1000);
+    }
+
+    document.getElementById('resend-btn').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const btn = document.getElementById('resend-btn');
+      btn.disabled = true;
+      try {
+        await sendVerificationCode(currentUser);
+        showToast("📧 Nouveau code envoyé !");
+        clearCodeInputs();
+        clearError();
+        startResendCooldown();
+      } catch (e) {
+        console.error(e);
+        const detail = (e && (e.text || e.message)) ? (e.text || e.message) : JSON.stringify(e);
+        showToast("❌ Erreur lors de l'envoi : " + detail);
+        btn.disabled = false;
+      }
+    });
+
+    // ===== RETOUR / CHANGER DE COMPTE =====
+    document.getElementById('back-link').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await signOut(auth);
+      window.location.href = "auth.html";
+    });
+
+    // ===== ÉTAT D'AUTHENTIFICATION =====
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "auth.html";
+        return;
+      }
+      currentUser = user;
+
+      // Déjà vérifié pour cette session : direction le menu profil.
+      const verified = sessionStorage.getItem('emailVerified_' + user.uid) === 'true';
+      if (verified) {
+        window.location.href = "profils.html";
+        return;
+      }
+
+      document.getElementById('masked-email').textContent = maskEmail(user.email || '');
+
+      // Si aucun code actif ou code expiré, on en (re)génère un automatiquement.
+      try {
+        const ref = doc(db, "users", user.uid, "emailVerification", "current");
+        const snap = await getDoc(ref);
+        if (!snap.exists() || Date.now() > snap.data().expiresAt) {
+          await sendVerificationCode(user);
+          showToast("📧 Un code vous a été envoyé");
+        }
+      } catch (e) {
+        console.error("Échec de l'envoi du code :", e);
+        const detail = (e && (e.text || e.message)) ? (e.text || e.message) : JSON.stringify(e);
+        showError("Échec de l'envoi de l'email : " + detail);
+      }
+      startResendCooldown();
+    });
+  </script>
+</body>
+</html>

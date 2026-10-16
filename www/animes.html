@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+<script src="see-cat-intro.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#080816">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="See Cat">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<script src="see-cat-app.js" defer></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>See Cat — Catalogue</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --orange: #ff7e29; --purple: #6a5af9; --bg: #080816; --card: #121220;
+      --card2: #181830; --text: #f0f0f0; --muted: #8888aa; --border: rgba(255,255,255,0.07);
+      --green: #2ecc71; --red: #e74c3c;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; overflow-x:hidden; }
+    ::-webkit-scrollbar { width:6px; height:5px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.1); border-radius:3px; }
+
+    header { position:fixed; top:0; width:100%; z-index:200; padding:14px 5%; display:flex; align-items:center; justify-content:space-between; background:rgba(8,8,22,.98); backdrop-filter:blur(10px); }
+    .logo { font-family:'Bebas Neue',sans-serif; font-size:30px; color:var(--orange); display:flex; align-items:center; gap:10px; letter-spacing:3px; cursor:pointer; text-decoration:none; }
+    .logo a { color:var(--orange); text-decoration:none; }
+    nav ul { display:flex; list-style:none; gap:22px; }
+    nav ul li a { color:var(--muted); text-decoration:none; font-size:13px; font-weight:500; transition:color .2s; cursor:pointer; }
+    nav ul li a:hover, nav ul li a.active { color:#fff; }
+    .nav-right { display:flex; align-items:center; gap:14px; }
+
+    .search-wrap { position:relative; }
+    .search-input { background:rgba(255,255,255,0.09); border:1px solid rgba(255,255,255,0.12); border-radius:20px; color:#fff; padding:7px 14px 7px 36px; width:195px; font-size:13px; font-family:'Inter',sans-serif; transition:width .3s,background .3s; }
+    .search-input:focus { width:250px; background:rgba(255,255,255,0.14); outline:none; }
+    .search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:12px; }
+    .search-results { position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--card); border-radius:8px; box-shadow:0 12px 36px rgba(0,0,0,.5); max-height:320px; overflow-y:auto; display:none; z-index:1000; border:1px solid var(--border); }
+    .search-results.active { display:block; }
+    .search-result-item { padding:10px 14px; display:flex; align-items:center; gap:12px; cursor:pointer; border-bottom:1px solid var(--border); transition:background .2s; }
+    .search-result-item:hover { background:rgba(255,126,41,.12); }
+    .search-result-item img { width:38px; height:52px; object-fit:cover; border-radius:4px; }
+    .search-result-title { font-size:13px; font-weight:600; margin-bottom:2px; }
+    .search-result-meta { font-size:11px; color:var(--muted); }
+
+    .btn-signin { background:transparent; color:#fff; border:1px solid var(--orange); padding:7px 18px; border-radius:20px; cursor:pointer; font-size:13px; font-weight:600; transition:background .2s; font-family:'Inter',sans-serif; }
+    .btn-signin:hover { background:rgba(255,126,41,.2); }
+    .user-avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(45deg,var(--orange),var(--purple)); display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; font-size:14px; overflow:hidden; display:none; }
+    .user-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+    .user-menu { position:absolute; top:calc(100% + 10px); right:0; background:var(--card); border:1px solid var(--border); border-radius:8px; min-width:180px; padding:8px 0; display:none; box-shadow:0 12px 36px rgba(0,0,0,.5); }
+    .user-menu.active { display:block; }
+    .user-email { padding:8px 16px; font-size:12px; color:var(--muted); border-bottom:1px solid var(--border); margin-bottom:6px; word-break:break-all; }
+    .user-menu ul { list-style:none; }
+    .user-menu ul li a { display:block; padding:8px 16px; font-size:13px; color:var(--text); }
+    .user-menu ul li a:hover { background:rgba(255,255,255,.05); color:var(--orange); }
+
+    .hamburger-btn { display:none; background:transparent; border:none; color:#fff; font-size:20px; cursor:pointer; padding:6px 8px; }
+    .mobile-nav-overlay { position:fixed; inset:0; top:0; z-index:300; background:rgba(8,8,22,.98); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; opacity:0; visibility:hidden; transition:opacity .25s; }
+    .mobile-nav-overlay.active { opacity:1; visibility:visible; }
+    .mobile-nav { display:flex; flex-direction:column; align-items:center; gap:34px; width:100%; padding:0 24px; }
+    .mobile-nav ul { list-style:none; display:flex; flex-direction:column; gap:26px; text-align:center; }
+    .mobile-nav ul li a { color:var(--text); text-decoration:none; font-size:22px; font-weight:600; }
+    .mobile-nav ul li a.active, .mobile-nav ul li a:hover { color:var(--orange); }
+    .mobile-search-wrap { width:100%; max-width:320px; }
+    .mobile-search-input { width:100% !important; padding:12px 14px 12px 38px; font-size:15px; }
+    .mobile-search-input:focus { width:100% !important; }
+
+    .page-header { padding:120px 5% 24px; }
+    .page-title { font-family:'Bebas Neue',sans-serif; font-size:40px; letter-spacing:2px; margin-bottom:6px; }
+    .page-title i { color:var(--orange); margin-right:8px; }
+    .page-sub { color:var(--muted); font-size:14px; }
+
+    .categories { padding:8px 5% 18px; }
+    .categories-list { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+    .categories-list::-webkit-scrollbar { display:none; }
+    .category-btn { padding:6px 18px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.08); border-radius:20px; color:var(--muted); cursor:pointer; transition:all .2s; white-space:nowrap; font-size:13px; font-weight:500; font-family:'Inter',sans-serif; }
+    .category-btn.active, .category-btn:hover { background:var(--orange); color:#fff; border-color:var(--orange); }
+
+    .catalog-section { padding:0 5% 80px; }
+    .catalog-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:18px; }
+
+    .anime-card { height:250px; border-radius:8px; overflow:hidden; position:relative; transition:transform .3s; cursor:pointer; background:var(--card); }
+    .anime-card:hover { transform:translateY(-4px); }
+    .anime-card img { width:100%; height:100%; object-fit:cover; display:block; }
+    .anime-card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.9) 0%,transparent 55%); opacity:0; transition:opacity .3s; padding:12px; display:flex; flex-direction:column; justify-content:flex-end; }
+    .anime-card:hover .anime-card-overlay { opacity:1; }
+    .card-title { font-size:13px; font-weight:700; margin-bottom:3px; }
+    .card-meta { font-size:11px; color:var(--muted); }
+    .card-badge { position:absolute; top:8px; right:8px; padding:2px 8px; border-radius:3px; font-size:10px; font-weight:700; letter-spacing:.5px; }
+    .card-badge.film { background:linear-gradient(135deg,var(--orange),#ff5252); }
+    .card-badge.serie { background:linear-gradient(135deg,var(--purple),#6a8cff); }
+    .card-rating { position:absolute; top:8px; left:8px; background:rgba(0,0,0,.75); color:#ffc107; padding:2px 7px; border-radius:3px; font-size:11px; font-weight:600; display:flex; align-items:center; gap:3px; }
+    .card-fav { position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,.7); width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--muted); font-size:12px; z-index:3; opacity:0; transition:color .2s; }
+    .anime-card:hover .card-fav { opacity:1; }
+    .card-fav.active, .card-fav:hover { color:var(--orange); }
+
+    .empty-state { text-align:center; padding:80px 20px; color:var(--muted); grid-column:1/-1; }
+    .empty-state i { font-size:40px; display:block; margin-bottom:12px; opacity:.35; }
+
+    .load-more-btn { display:block; margin:32px auto 0; padding:12px 32px; background:rgba(255,255,255,.07); border:1px solid var(--border); color:#fff; border-radius:24px; cursor:pointer; font-family:'Inter'; font-weight:600; font-size:13px; }
+    .load-more-btn:hover { background:rgba(255,255,255,.12); }
+
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(100px); background:var(--card2); border:1px solid var(--border); padding:12px 22px; border-radius:8px; display:flex; align-items:center; gap:10px; z-index:9999; transition:transform .3s; font-size:13px; }
+    .toast.show { transform:translateX(-50%) translateY(0); }
+    .toast i { color:var(--green); }
+
+    /* AUTH MODAL */
+    .auth-modal { position:fixed; inset:0; background:rgba(0,0,0,.8); z-index:500; display:none; align-items:center; justify-content:center; }
+    .auth-modal.active { display:flex; }
+    .auth-content { background:var(--card); border-radius:12px; padding:32px; width:360px; max-width:90vw; position:relative; }
+    .auth-close { position:absolute; top:14px; right:14px; background:none; border:none; color:#fff; font-size:18px; cursor:pointer; }
+    .auth-tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:20px; }
+    .auth-tab { padding:8px 18px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:14px; border-bottom:2px solid transparent; }
+    .auth-tab.active { color:var(--orange); border-bottom-color:var(--orange); }
+    .auth-form { display:none; }
+    .auth-form.active { display:block; }
+    .form-group { margin-bottom:14px; }
+    .form-group label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .form-group input { width:100%; padding:10px; background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:6px; color:#fff; font-size:13px; }
+    .auth-submit { width:100%; padding:11px; background:var(--orange); border:none; border-radius:6px; color:#fff; font-weight:700; cursor:pointer; margin-top:6px; font-family:'Inter'; }
+    .auth-divider { text-align:center; color:var(--muted); font-size:12px; margin:14px 0; }
+
+    footer { padding:40px 5% 20px; border-top:1px solid var(--border); margin-top:20px; }
+    .footer-content { display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px; margin-bottom:20px; }
+    .footer-col h3 { font-size:14px; margin-bottom:12px; }
+    .footer-col ul { list-style:none; }
+    .footer-col ul li { margin-bottom:8px; }
+    .footer-col ul li a { color:var(--muted); text-decoration:none; font-size:13px; }
+    .footer-col ul li a:hover { color:var(--orange); }
+    .social-icons { display:flex; gap:14px; margin-top:12px; }
+    .social-icons a { color:var(--muted); font-size:18px; }
+    .social-icons a:hover { color:var(--orange); }
+    .copyright { color:var(--muted); font-size:12px; text-align:center; padding-top:16px; border-top:1px solid var(--border); }
+
+    @media(max-width:900px) { .page-title { font-size:32px; } }
+    @media(max-width:768px) {
+      nav { display:none; }
+      .hamburger-btn { display:inline-block; }
+      .search-input { width:120px; }
+      .search-input:focus { width:150px; }
+      .page-header { padding:100px 5% 18px; }
+      .catalog-grid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; }
+      .anime-card { height:190px; }
+      .footer-content { flex-direction:column; text-align:center; align-items:center; }
+      .social-icons { justify-content:center; }
+    }
+    @media(max-width:480px) {
+      header { padding:10px 4%; }
+      .logo { font-size:15px; }
+      .search-wrap { display:none; }
+      .btn-signin { padding:6px 10px; font-size:11px; }
+      .page-title { font-size:26px; }
+      .catalog-grid { grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:8px; }
+      .anime-card { height:160px; }
+    }
+    @media(max-width:340px) {
+      .catalog-grid { grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:6px; }
+      .anime-card { height:140px; }
+      .page-header { padding:90px 4% 14px; }
+      .page-title { font-size:22px; }
+    }
+  
+    /* ===== NOTIFICATIONS (envoyées depuis l'app admin) ===== */
+    .notif-wrap { position:relative; display:none; } /* masqué par défaut : visible seulement pour les personnes connectées (voir JS) */
+    .notif-btn { position:relative; background:none; border:none; color:#fff; font-size:17px; cursor:pointer; width:38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background .15s; flex-shrink:0; }
+    .notif-btn:hover { background:rgba(255,255,255,.1); }
+    .notif-badge { position:absolute; top:1px; right:1px; min-width:16px; height:16px; padding:0 4px; background:var(--orange); color:#fff; font-size:10px; font-weight:700; border-radius:10px; align-items:center; justify-content:center; line-height:1; border:2px solid var(--bg); display:none; }
+    .notif-badge.show { display:flex; }
+    .notif-panel { position:absolute; top:50px; right:0; width:340px; max-width:90vw; max-height:440px; overflow-y:auto; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.6); z-index:500; opacity:0; visibility:hidden; transform:translateY(-8px); transition:all .2s; }
+    .notif-panel.open { opacity:1; visibility:visible; transform:translateY(0); }
+    .notif-panel-header { display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--card); }
+    .notif-panel-header h4 { font-size:14px; font-weight:700; }
+    .notif-mark-all { background:none; border:none; color:var(--orange); font-size:11.5px; cursor:pointer; font-weight:600; font-family:'Inter',sans-serif; }
+    .notif-mark-all:hover { text-decoration:underline; }
+    .notif-list { display:flex; flex-direction:column; }
+    .notif-item { display:flex; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .15s; text-decoration:none; color:inherit; }
+    .notif-item:last-child { border-bottom:none; }
+    .notif-item:hover { background:rgba(255,255,255,.04); }
+    .notif-item.unread { background:rgba(255,126,41,.07); }
+    .notif-item-icon { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--orange),var(--purple)); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; overflow:hidden; color:#fff; }
+    .notif-item-icon img { width:100%; height:100%; object-fit:cover; }
+    .notif-item-body { flex:1; min-width:0; }
+    .notif-item-title { font-size:13px; font-weight:700; color:#fff; margin-bottom:2px; }
+    .notif-item-msg { font-size:12.5px; color:var(--muted); line-height:1.5; }
+    .notif-item-time { font-size:11px; color:var(--muted); opacity:.7; margin-top:4px; }
+    .notif-empty { padding:36px 16px; text-align:center; color:var(--muted); font-size:13px; }
+    .notif-empty i { font-size:26px; margin-bottom:10px; display:block; opacity:.5; }
+    @media(max-width:480px) {
+      .notif-panel { position:fixed; top:60px; left:4vw; right:4vw; width:auto; max-width:none; max-height:70vh; border-radius:14px; }
+      .notif-item-icon { width:30px; height:30px; font-size:12px; }
+      .notif-item-title { font-size:12.5px; }
+      .notif-item-msg { font-size:11.5px; }
+      .notif-panel-header { padding:12px 14px; }
+      .notif-item { padding:10px 14px; gap:8px; }
+      .notif-mark-all { font-size:11px; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
+
+  <!-- HEADER -->
+  <header id="header">
+    <div class="logo"><a href="index.html"><i class="fas fa-cat"></i> SEE CAT</a></div>
+    <nav>
+      <ul>
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="animes.html" class="active">Animes</a></li>
+        <li><a href="films.html">Films</a></li>
+        <li><a href="series.html">Séries</a></li>
+        <li><a href="liste.html">Ma liste</a></li>
+      </ul>
+    </nav>
+    <div class="nav-right">
+      <div class="search-wrap">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" id="search-input" placeholder="Rechercher...">
+        <div class="search-results" id="search-results"></div>
+      </div>
+      <div class="notif-wrap">
+        <button class="notif-btn" id="notif-btn" title="Notifications"><i class="fas fa-bell"></i><span class="notif-badge" id="notif-badge">0</span></button>
+        <div class="notif-panel" id="notif-panel">
+          <div class="notif-panel-header">
+            <h4>Notifications</h4>
+            <button class="notif-mark-all" id="notif-mark-all">Tout marquer comme lu</button>
+          </div>
+          <div class="notif-list" id="notif-list"></div>
+        </div>
+      </div>
+      <button class="btn-signin" id="auth-button">Connexion</button>
+      <div class="user-avatar" id="user-avatar">
+        <img id="user-avatar-img" src="" alt="Avatar">
+        <div class="user-menu" id="user-menu">
+          <div class="user-email" id="user-menu-email"></div>
+          <ul>
+            <li><a href="liste.html">Ma Liste</a></li>
+            <li><a href="#" id="logout-button">Déconnexion</a></li>
+          </ul>
+        </div>
+      </div>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Ouvrir le menu"><i class="fas fa-bars"></i></button>
+    </div>
+  </header>
+
+  <!-- MENU MOBILE -->
+  <div class="mobile-nav-overlay" id="mobile-nav-overlay">
+    <nav class="mobile-nav">
+      <div class="search-wrap mobile-search-wrap">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input mobile-search-input" id="mobile-search-input" placeholder="Rechercher...">
+        <div class="search-results" id="mobile-search-results"></div>
+      </div>
+      <ul>
+        <li><a href="index.html">Accueil</a></li>
+        <li><a href="animes.html" class="active">Animes</a></li>
+        <li><a href="films.html">Films</a></li>
+        <li><a href="series.html">Séries</a></li>
+        <li><a href="liste.html">Ma liste</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- PAGE -->
+  <div class="page-header">
+    <h1 class="page-title"><i class="fas fa-layer-group"></i>Catalogue</h1>
+    <p class="page-sub">Tous les animes, films et séries disponibles sur See Cat.</p>
+  </div>
+
+  <div class="categories"><div class="categories-list" id="categories-list"></div></div>
+
+  <section class="catalog-section">
+    <div class="catalog-grid" id="catalog-grid"></div>
+    <button class="load-more-btn" id="load-more-btn" style="display:none;">Voir plus</button>
+  </section>
+
+  <!-- AUTH MODAL -->
+  <div class="auth-modal" id="auth-modal">
+    <div class="auth-content">
+      <button class="auth-close" id="auth-close"><i class="fas fa-times"></i></button>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--orange);letter-spacing:2px;margin-bottom:4px"><i class="fas fa-cat"></i> SEE CAT</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Connexion</button>
+        <button class="auth-tab" data-tab="register">Inscription</button>
+      </div>
+      <form class="auth-form active" id="login-form">
+        <div class="form-group"><label>Email</label><input type="email" id="login-email" required></div>
+        <div class="form-group"><label>Mot de passe</label><input type="password" id="login-password" required></div>
+        <button type="submit" class="auth-submit">Se connecter</button>
+        <div class="auth-divider">ou</div>
+        <button type="button" class="auth-submit" style="background:transparent;border:1px solid var(--border);color:#fff;" id="google-signin-btn"><i class="fab fa-google"></i> Google</button>
+      </form>
+      <form class="auth-form" id="register-form">
+        <div class="form-group"><label>Nom d'utilisateur</label><input type="text" id="register-username" required></div>
+        <div class="form-group"><label>Email</label><input type="email" id="register-email" required></div>
+        <div class="form-group"><label>Mot de passe</label><input type="password" id="register-password" required></div>
+        <div class="form-group"><label>Confirmer</label><input type="password" id="register-confirm" required></div>
+        <button type="submit" class="auth-submit">Créer mon compte</button>
+        <div class="auth-divider">ou</div>
+        <button type="button" class="auth-submit" style="background:transparent;border:1px solid var(--border);color:#fff;" id="google-signup-btn"><i class="fab fa-google"></i> Google</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-col">
+        <h3>Navigation</h3>
+        <ul>
+          <li><a href="index.html">Accueil</a></li>
+          <li><a href="animes.html">Animes</a></li>
+          <li><a href="films.html">Films</a></li>
+          <li><a href="series.html">Séries</a></li>
+          <li><a href="liste.html">Ma liste</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>Infos</h3>
+        <ul>
+          <li><a href="apropos.html">À propos</a></li>
+          <li><a href="contact.html">Contact</a></li>
+          <li><a href="mentions-legales.html">Mentions légales</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h3>Rejoignez-nous</h3>
+        <div class="social-icons">
+          <a href="#" title="Discord"><i class="fab fa-discord"></i></a>
+          <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+          <a href="#" title="YouTube"><i class="fab fa-youtube"></i></a>
+          <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+        </div>
+      </div>
+    </div>
+    <div class="copyright">© 2026 SEE CAT / UNIBEAL STUDIO</div>
+  </footer>
+
+  <!-- ===== FIREBASE ===== -->
+  <script type="importmap">
+  { "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js",
+      "firebase/auth": "https://www.gstatic.com/firebasejs/12.15.0/firebase-auth.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore.js"
+  } }
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "firebase/app";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "firebase/auth";
+    import { getFirestore, collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCiOOJKmyXAih0E4Nx1Z4cGg2kcgRH-u0E",
+      authDomain: "see-cat-anime.firebaseapp.com",
+      projectId: "see-cat-anime",
+      storageBucket: "see-cat-anime.firebasestorage.app",
+      messagingSenderId: "787391287965",
+      appId: "1:787391287965:web:bc0d66a306a93b00823a74"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ===== NOTIFICATIONS (envoyées depuis l'app admin via Firestore, collection "notifications") =====
+    (function() {
+      const READ_KEY = 'sc_notif_read_ids';
+      function getReadIds() {
+        try { return JSON.parse(localStorage.getItem(READ_KEY) || '[]'); } catch (e) { return []; }
+      }
+      function setReadIds(ids) { localStorage.setItem(READ_KEY, JSON.stringify(ids)); }
+
+      let allNotifs = [];
+
+      function timeAgo(dateVal) {
+        if (!dateVal) return '';
+        const d = (dateVal && typeof dateVal.toDate === 'function') ? dateVal.toDate() : new Date(dateVal);
+        if (isNaN(d.getTime())) return '';
+        const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+        if (diff < 60) return "À l'instant";
+        if (diff < 3600) return Math.floor(diff / 60) + ' min';
+        if (diff < 86400) return Math.floor(diff / 3600) + ' h';
+        if (diff < 2592000) return Math.floor(diff / 86400) + ' j';
+        return d.toLocaleDateString('fr-FR');
+      }
+
+      function escapeHtml(str) {
+        return (str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+
+      function renderNotifs() {
+        const list = document.getElementById('notif-list');
+        const badge = document.getElementById('notif-badge');
+        if (!list || !badge) return;
+        const readIds = getReadIds();
+
+        if (!allNotifs.length) {
+          list.innerHTML = '<div class="notif-empty"><i class="fas fa-bell-slash"></i>Aucune notification pour le moment</div>';
+          badge.classList.remove('show');
+          return;
+        }
+
+        const unreadCount = allNotifs.filter(n => !readIds.includes(n.id)).length;
+        if (unreadCount > 0) {
+          badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+          badge.classList.add('show');
+        } else {
+          badge.classList.remove('show');
+        }
+
+        list.innerHTML = allNotifs.map(n => {
+          const isUnread = !readIds.includes(n.id);
+          const href = n.link || '#';
+          return `<a href="${escapeHtml(href)}" class="notif-item ${isUnread ? 'unread' : ''}" data-id="${n.id}">
+            <div class="notif-item-icon">${n.imageUrl ? `<img src="${escapeHtml(n.imageUrl)}" alt="">` : '<i class="fas fa-cat"></i>'}</div>
+            <div class="notif-item-body">
+              <div class="notif-item-title">${escapeHtml(n.title || 'Notification')}</div>
+              <div class="notif-item-msg">${escapeHtml(n.message || '')}</div>
+              <div class="notif-item-time">${timeAgo(n.createdAt)}</div>
+            </div>
+          </a>`;
+        }).join('');
+
+        list.querySelectorAll('.notif-item').forEach(el => {
+          el.addEventListener('click', (e) => {
+            const id = el.dataset.id;
+            const readIds2 = getReadIds();
+            if (!readIds2.includes(id)) { readIds2.push(id); setReadIds(readIds2); }
+            if (el.getAttribute('href') === '#') e.preventDefault();
+            renderNotifs();
+          });
+        });
+      }
+
+      let unsubscribeNotifs = null;
+
+      function startNotifications() {
+        if (unsubscribeNotifs) return; // déjà abonné
+        try {
+          const notifQuery = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(30));
+          unsubscribeNotifs = onSnapshot(notifQuery, (snap) => {
+            allNotifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            renderNotifs();
+          }, (err) => { console.error('Erreur notifications:', err); });
+        } catch (e) { console.error('Notifications indisponibles :', e); }
+      }
+
+      function stopNotifications() {
+        if (unsubscribeNotifs) { unsubscribeNotifs(); unsubscribeNotifs = null; }
+        allNotifs = [];
+        renderNotifs();
+      }
+
+      // Les notifications ne sont visibles et actives que pour les personnes connectées
+      window.__setNotifAuthState = function(isLoggedIn) {
+        const wrap = document.querySelector('.notif-wrap');
+        if (wrap) wrap.style.display = isLoggedIn ? 'block' : 'none';
+        if (!isLoggedIn) {
+          const panel = document.getElementById('notif-panel');
+          if (panel) panel.classList.remove('open');
+        }
+        if (isLoggedIn) startNotifications(); else stopNotifications();
+      };
+
+      const notifBtn = document.getElementById('notif-btn');
+      const notifPanel = document.getElementById('notif-panel');
+      const markAllBtn = document.getElementById('notif-mark-all');
+      if (notifBtn && notifPanel) {
+        notifBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          notifPanel.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+          if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) notifPanel.classList.remove('open');
+        });
+      }
+      if (markAllBtn) {
+        markAllBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setReadIds(allNotifs.map(n => n.id));
+          renderNotifs();
+        });
+      }
+    })();
+
+    const provider = new GoogleAuthProvider();
+
+    window.signInWithGoogle = async function() {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        showToast("✅ Connexion réussie ! Bienvenue " + result.user.displayName);
+        return result.user;
+      } catch (error) {
+        showToast("❌ Erreur : " + error.message);
+        throw error;
+      }
+    };
+
+    window.signOutUser = async function() {
+      await signOut(auth);
+      localStorage.removeItem('currentUser');
+      showToast("Déconnecté");
+      updateUIForAuth(null);
+      window.location.href = 'index.html';
+    };
+
+    function updateUIForAuth(user) {
+      const authBtn = document.getElementById('auth-button');
+      const userAvatar = document.getElementById('user-avatar');
+      const avatarImg = document.getElementById('user-avatar-img');
+      const userEmail = document.getElementById('user-menu-email');
+      if (user) {
+        authBtn.style.display = 'none';
+        userAvatar.style.display = 'flex';
+        if (user.photoURL) { avatarImg.src = user.photoURL; avatarImg.style.display = 'block'; }
+        userEmail.textContent = user.email || 'Utilisateur';
+        localStorage.setItem('currentUser', JSON.stringify({ uid:user.uid, displayName:user.displayName, email:user.email, photoURL:user.photoURL }));
+      } else {
+        authBtn.style.display = 'block';
+        userAvatar.style.display = 'none';
+        localStorage.removeItem('currentUser');
+      }
+    }
+    window.updateUIForAuth = updateUIForAuth;
+    onAuthStateChanged(auth, (user) => {
+      updateUIForAuth(user);
+      // Notifications réservées aux personnes connectées (invisibles/inactives pour les invités)
+      if (window.__setNotifAuthState) window.__setNotifAuthState(!!user);
+      if (user) {
+        localStorage.removeItem('guestMode');
+      } else if (localStorage.getItem('guestMode') !== 'true') {
+        // Personne connectée ni invité : direction l'écran de connexion.
+        window.location.href = 'auth.html';
+      }
+    });
+
+    window.showToast = function(msg) {
+      const t = document.getElementById('toast');
+      const m = document.getElementById('toast-msg');
+      if (t && m) { m.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2600); }
+    };
+    const showToast = window.showToast;
+
+    function loadFromFirestore() {
+      const colRef = collection(db, "animes");
+      onSnapshot(colRef, (snapshot) => {
+        const list = [];
+        snapshot.forEach((doc) => {
+          const raw = doc.data();
+          const seasons = raw.seasons || [];
+          const totalEps = seasons.reduce((acc, s) => acc + (s.episodes || []).length, 0);
+          list.push({
+            id: doc.id,
+            title: raw.title || 'Sans titre',
+            year: raw.year || 'N/A',
+            image: raw.image || 'https://via.placeholder.com/300x450?text=No+Image',
+            rating: parseFloat(raw.rating) || 7,
+            genres: raw.genres || [],
+            episodes_total: totalEps,
+            type: raw.type || 'serie',
+            addedAt: raw.addedAt || new Date().toISOString()
+          });
+        });
+        window.__allContents = list;
+        window.allContents = list;
+        localStorage.setItem('allContents', JSON.stringify(list));
+        window.initPage && window.initPage();
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('google-signin-btn')?.addEventListener('click', async () => {
+        try { await window.signInWithGoogle(); document.getElementById('auth-modal').classList.remove('active'); } catch(e) {}
+      });
+      document.getElementById('google-signup-btn')?.addEventListener('click', async () => {
+        try { await window.signInWithGoogle(); document.getElementById('auth-modal').classList.remove('active'); } catch(e) {}
+      });
+    });
+
+    loadFromFirestore();
+  </script>
+
+  <!-- ===== SCRIPT PRINCIPAL ===== -->
+  <script>
+    let favoriteContents = JSON.parse(localStorage.getItem('favoriteContents') || '[]');
+    let currentGenre = 'Tous';
+    let visibleCount = 24;
+
+    function toggleFav(id) {
+      const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      if (!user) { document.getElementById('auth-modal').classList.add('active'); return; }
+      const idx = favoriteContents.indexOf(id);
+      if (idx === -1) { favoriteContents.push(id); showToast('✅ Ajouté à votre liste !'); }
+      else { favoriteContents.splice(idx, 1); showToast('Retiré de votre liste.'); }
+      localStorage.setItem('favoriteContents', JSON.stringify(favoriteContents));
+    }
+
+    function makeCard(content) {
+      const isFav = favoriteContents.includes(content.id);
+      const d = document.createElement('div');
+      d.className = 'anime-card';
+      const badgeClass = content.type === 'serie' ? 'serie' : 'film';
+      const badgeText = content.type === 'serie' ? 'SÉRIE' : 'FILM';
+      d.innerHTML = `
+        <img src="${content.image}" alt="${content.title}" loading="lazy">
+        <div class="card-badge ${badgeClass}">${badgeText}</div>
+        <div class="card-rating"><i class="fas fa-star"></i> ${content.rating}</div>
+        <div class="card-fav ${isFav ? 'active' : ''}" data-id="${content.id}"><i class="${isFav ? 'fas' : 'far'} fa-bookmark"></i></div>
+        <div class="anime-card-overlay">
+          <div class="card-title">${content.title}</div>
+          <div class="card-meta">${content.year} · ${content.type === 'serie' ? content.episodes_total + ' ép' : 'Film'}</div>
+        </div>`;
+      d.querySelector('.card-fav').addEventListener('click', ev => {
+        ev.stopPropagation();
+        toggleFav(content.id);
+        const f = d.querySelector('.card-fav');
+        const isFavNow = favoriteContents.includes(content.id);
+        f.innerHTML = `<i class="${isFavNow ? 'fas' : 'far'} fa-bookmark"></i>`;
+        isFavNow ? f.classList.add('active') : f.classList.remove('active');
+      });
+      d.addEventListener('click', () => { window.location.href = `fiche-anime.html?id=${content.id}`; });
+      return d;
+    }
+
+    function getFilteredList() {
+      const all = window.__allContents || [];
+      if (currentGenre === 'Tous') return all;
+      return all.filter(c => Array.isArray(c.genres) && c.genres.some(g => (typeof g === 'object' ? g.name : g) === currentGenre));
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('catalog-grid');
+      const loadMoreBtn = document.getElementById('load-more-btn');
+      const list = getFilteredList();
+      grid.innerHTML = '';
+      if (!list.length) {
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>Aucun contenu disponible.</p></div>';
+        loadMoreBtn.style.display = 'none';
+        return;
+      }
+      list.slice(0, visibleCount).forEach(c => grid.appendChild(makeCard(c)));
+      loadMoreBtn.style.display = list.length > visibleCount ? 'block' : 'none';
+    }
+
+    function initCategories() {
+      const cats = ['Tous', 'Action', 'Aventure', 'Romance', 'Fantaisie', 'Horreur', 'Sport', 'Musique'];
+      const cl = document.getElementById('categories-list');
+      cl.innerHTML = '';
+      cats.forEach((cat, i) => {
+        const b = document.createElement('button');
+        b.className = 'category-btn' + (i === 0 ? ' active' : '');
+        b.textContent = cat;
+        b.addEventListener('click', () => {
+          document.querySelectorAll('.category-btn').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          currentGenre = cat;
+          visibleCount = 24;
+          renderGrid();
+        });
+        cl.appendChild(b);
+      });
+    }
+
+    document.getElementById('load-more-btn').addEventListener('click', () => {
+      visibleCount += 24;
+      renderGrid();
+    });
+
+    window.initPage = function() {
+      initCategories();
+      renderGrid();
+    };
+
+    // ===== Recherche en direct (header + menu mobile) =====
+    (function initSearch() {
+      function getContents() { return window.__allContents || window.allContents || []; }
+      function renderResults(resultsBox, items) {
+        if (!items.length) {
+          resultsBox.innerHTML = `<div class="search-result-item" style="cursor:default; color:var(--muted);">Aucun résultat</div>`;
+          resultsBox.classList.add('active');
+          return;
+        }
+        resultsBox.innerHTML = items.slice(0, 8).map(c => `
+          <div class="search-result-item" data-id="${c.id}">
+            <img src="${c.image}" alt="${c.title}" onerror="this.style.display='none'">
+            <div><div class="search-result-title">${c.title}</div><div class="search-result-meta">${c.year || ''}${c.type ? ' · ' + (c.type === 'film' ? 'Film' : 'Série') : ''}</div></div>
+          </div>`).join('');
+        resultsBox.classList.add('active');
+        resultsBox.querySelectorAll('.search-result-item[data-id]').forEach(el => {
+          el.addEventListener('click', () => { window.location.href = `fiche-anime.html?id=${el.dataset.id}`; });
+        });
+      }
+      function wireSearch(input, resultsBox) {
+        if (!input || !resultsBox) return;
+        function runSearch() {
+          const q = input.value.trim().toLowerCase();
+          if (!q) { resultsBox.classList.remove('active'); resultsBox.innerHTML = ''; return; }
+          const filtered = getContents().filter(c => (c.title || '').toLowerCase().includes(q) || (c.genres || []).some(g => (g || '').toLowerCase().includes(q)));
+          renderResults(resultsBox, filtered);
+        }
+        input.addEventListener('input', runSearch);
+        input.addEventListener('focus', () => { if (input.value.trim()) runSearch(); });
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            const first = resultsBox.querySelector('.search-result-item[data-id]');
+            if (first) window.location.href = `fiche-anime.html?id=${first.dataset.id}`;
+          }
+        });
+      }
+      wireSearch(document.getElementById('search-input'), document.getElementById('search-results'));
+      wireSearch(document.getElementById('mobile-search-input'), document.getElementById('mobile-search-results'));
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-wrap')) document.querySelectorAll('.search-results.active').forEach(box => box.classList.remove('active'));
+      });
+    })();
+
+    // ===== Menu mobile (hamburger) =====
+    (function initMobileNav() {
+      const btn = document.getElementById('hamburger-btn');
+      const overlay = document.getElementById('mobile-nav-overlay');
+      if (!btn || !overlay) return;
+      function closeMenu() { overlay.classList.remove('active'); btn.innerHTML = '<i class="fas fa-bars"></i>'; document.body.style.overflow = ''; }
+      function openMenu() { overlay.classList.add('active'); btn.innerHTML = '<i class="fas fa-times"></i>'; document.body.style.overflow = 'hidden'; }
+      btn.addEventListener('click', () => { overlay.classList.contains('active') ? closeMenu() : openMenu(); });
+      overlay.querySelectorAll('.mobile-nav > ul a').forEach(link => link.addEventListener('click', closeMenu));
+    })();
+
+    // ===== Auth modal =====
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('auth-button').addEventListener('click', () => document.getElementById('auth-modal').classList.add('active'));
+      document.getElementById('auth-close').addEventListener('click', () => document.getElementById('auth-modal').classList.remove('active'));
+      document.querySelectorAll('.auth-tab').forEach(t => {
+        t.addEventListener('click', () => {
+          document.querySelectorAll('.auth-tab').forEach(x => x.classList.remove('active'));
+          document.querySelectorAll('.auth-form').forEach(x => x.classList.remove('active'));
+          t.classList.add('active');
+          document.getElementById(t.dataset.tab + '-form').classList.add('active');
+        });
+      });
+      document.getElementById('login-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const em = document.getElementById('login-email').value;
+        const pw = document.getElementById('login-password').value;
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const user = users.find(u => u.email === em && u.password === pw);
+        if (user) { localStorage.setItem('currentUser', JSON.stringify(user)); document.getElementById('auth-modal').classList.remove('active'); showToast('✅ Connexion réussie !'); location.reload(); }
+        else { alert('Email ou mot de passe incorrect.'); }
+      });
+      document.getElementById('register-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const u = document.getElementById('register-username').value;
+        const em = document.getElementById('register-email').value;
+        const pw = document.getElementById('register-password').value;
+        const cf = document.getElementById('register-confirm').value;
+        if (pw !== cf) { alert('Mots de passe différents'); return; }
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        if (users.some(x => x.email === em)) { alert('Email déjà utilisé'); return; }
+        const nu = { id: Date.now(), username: u, email: em, password: pw, joinedDate: new Date().toISOString() };
+        users.push(nu);
+        localStorage.setItem('users', JSON.stringify(users));
+        localStorage.setItem('currentUser', JSON.stringify(nu));
+        document.getElementById('auth-modal').classList.remove('active');
+        showToast('✅ Compte créé !');
+        location.reload();
+      });
+      document.getElementById('logout-button').addEventListener('click', e => {
+        e.preventDefault();
+        if (window.signOutUser) window.signOutUser();
+        else { localStorage.removeItem('currentUser'); location.reload(); }
+      });
+      document.getElementById('user-avatar').addEventListener('click', () => {
+        document.getElementById('user-menu').classList.toggle('active');
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#user-avatar')) document.getElementById('user-menu')?.classList.remove('active');
+      });
+
+      const storedUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      if (storedUser) updateUIForAuth(storedUser);
+
+      const stored = localStorage.getItem('allContents');
+      if (stored) { window.__allContents = JSON.parse(stored); window.allContents = window.__allContents; initPage(); }
+    });
+  </script>
+</body>
+</html>
